@@ -72,7 +72,7 @@ class MethodDkaGUI:
 
         try:
             self.n = int(self.degree_entry.get())
-        except:
+        except Exception:
             messagebox.showerror("エラー", "最高次数を整数で入力してください。")
             return
 
@@ -99,22 +99,37 @@ class MethodDkaGUI:
     def calculate(self):
         try:
             coeffs = [Decimal(entry.get() or "0") for entry in self.coeff_entries]
-        except:
+        except Exception:
             messagebox.showerror("エラー", "係数は数値で入力してください。")
             return
 
-        roots = method_dka(coeffs)
+        # ボタンを無効化し、セーフティロック稼働中であることを明示
+        self.calc_button.config(state="disabled", text="計算中（セーフティロック: 最大1万回）...")
+        self.root.update()  # 画面表示を即時更新
 
+        # DKA法を実行（最大反復回数を1万回に設定して呼び出し）
+        roots = method_dka(coeffs, max_iter=10000)
+
+        # ボタンの状態を通常（最初）に戻す
+        self.calc_button.config(state="normal", text="計算開始")
         self.result_box.delete("1.0", tk.END)
 
+        # 収束しなかった場合のバグ・考慮漏れ対応
         if roots is None:
-            self.result_box.insert(tk.END, "収束しませんでした。\n")
-        else:
-            for i, (re, im) in enumerate(roots, start=1):
-                self.result_box.insert(
-                    tk.END,
-                    f"解 {i}: 実数部 = {re}, 虚数部 = {im}\n"
-                )
+            messagebox.showwarning(
+                "計算失敗", 
+                "セーフティロックの上限（10000回）以内に収束しませんでした。\n"
+                "係数の値を見直してください。"
+            )
+            self.result_box.insert(tk.END, "【警告】セーフティロック上限（10000回）に達したため計算を終了しました。\n")
+            return  # ここで処理を抜け、GUIは最初の入力待ち状態を維持します
+
+        # 収束した場合の結果表示
+        for i, (re, im) in enumerate(roots, start=1):
+            self.result_box.insert(
+                tk.END,
+                f"解 {i}: 実数部 = {re}, 虚数部 = {im}\n"
+            )
 
 # 実行
 if __name__ == "__main__":
