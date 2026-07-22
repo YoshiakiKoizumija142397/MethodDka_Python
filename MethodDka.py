@@ -4,10 +4,11 @@ import math
 # 精度設定（JS の precision: 50 に相当）
 getcontext().prec = 50
 
-def method_dka(coeffs):
+def method_dka(coeffs, max_iter=10000):
     """
     coeffs: 最高次から定数項までの係数リスト（Decimal）
     例: 3x^2 + 2x + 1 → [3, 2, 1]
+    max_iter: 最大反復回数（セーフティロック: デフォルト1万回）
     """
 
     n = len(coeffs) - 1
@@ -21,9 +22,8 @@ def method_dka(coeffs):
     sr = [Decimal(0)] * (n + 1)
     si = [Decimal(0)] * (n + 1)
 
-    # 収束判定
+    # 収束判定の閾値
     eps = Decimal("1e-50")
-    max_iter = 100
 
     # π
     pi = Decimal(str(math.acos(-1)))
@@ -86,5 +86,4 @@ def method_dka(coeffs):
         if converged:
             return [(sr[i], si[i]) for i in range(1, n + 1)]
 
-    return None  # 収束しなかった
-
+    return None  # 収束しなかった場合は None を返す
